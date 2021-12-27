@@ -24,8 +24,8 @@ isort = "^5.10.1"
 envfile = ".env"
 
 [tool.poe.tasks]
-_isort = "isort meetings/"
-_black = "black meetings/"
+_isort = "isort app/"
+_black = "black app/"
 shell = "poetry shell"
 start = { shell = "uvicorn app.main:app --reload" }
 format = ["_isort", "_black"]
