@@ -10,7 +10,7 @@ fastapi = "^0.70.1"
 uvicorn = { extras = ["standard"], version = "^0.16.0" }
 sqlmodel = "^0.0.5"
 alembic = "^1.7.5"
-asyncpg = "^0.25.0"
+psycopg2 = "^2.9.2"
 python-jose = { extras = ["cryptography"], version = "^3.3.0" }
 passlib = { extras = ["argon2"], version = "^1.7.4" }
 python-multipart = "^0.0.5"
@@ -19,6 +19,8 @@ python-multipart = "^0.0.5"
 poethepoet = "^0.11.0"
 black = "^21.12b0"
 isort = "^5.10.1"
+pytest = "^6.2.5"
+requests = "^2.26.0"
 
 [tool.poe]
 envfile = ".env"
@@ -28,6 +30,7 @@ _isort = "isort app/"
 _black = "black app/"
 shell = "poetry shell"
 start = { shell = "uvicorn app.main:app --reload" }
+test = { shell = "pytest", env = { "PYTHONPATH" = "." } }
 format = ["_isort", "_black"]
 
 [build-system]

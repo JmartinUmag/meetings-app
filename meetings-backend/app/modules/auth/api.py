@@ -1,48 +1,160 @@
 from typing import List
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlmodel import select
+from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlmodel import Session
 
 from app.database import get_session
-from app.modules.auth.models import APIToken, User, UserRead
+from app.modules.auth.crud import (
+    insert_role,
+    insert_user,
+    select_all_roles,
+    select_all_users,
+    select_user_by_username,
+    update_password,
+    update_user,
+)
+from app.modules.auth.models import (
+    APIToken,
+    PasswordUpdate,
+    Role,
+    RoleCreate,
+    User,
+    UserCreate,
+    UserRead,
+    UserUpdate,
+)
 from app.modules.auth.security import (
+    RoleChecker,
     auth_exception,
     authenticate_user,
     create_jwt,
-    hash_password,
+    get_current_active_user,
 )
+
+allow_manage_users = RoleChecker(["admin"])
 
 router = APIRouter()
 
 
-@router.get("/users/", response_model=List[UserRead])
-async def get_users(session: AsyncSession = Depends(get_session)):
-    result = await session.execute(select(User))
-    users = result.scalars().all()
-    return users
+@router.get(
+    "/users/", response_model=List[UserRead], dependencies=[Depends(allow_manage_users)]
+)
+async def get_users(session: Session = Depends(get_session)):
+    return select_all_users(session)
 
 
-@router.get("/users/{username}", response_model=User)
-async def create_user(username: str, session: AsyncSession = Depends(get_session)):
-    user = await session.execute(select(User).where(User.username == username))
-    return user.scalars().first()
+@router.get("/users/me", response_model=UserRead)
+async def get_user_me(
+    user: User = Depends(get_current_active_user),
+    session: Session = Depends(get_session),
+):
+    return select_user_by_username(session, user.username)
 
 
-@router.post("/users/", response_model=User)
-async def create_user(user: User, session: AsyncSession = Depends(get_session)):
-    user.password = hash_password(user.password)
-    session.add(user)
-    await session.commit()
-    await session.refresh(user)
-    return user
+@router.get(
+    "/users/{username}",
+    response_model=UserRead,
+    dependencies=[Depends(get_current_active_user)],
+)
+async def get_user(username: str, session: Session = Depends(get_session)):
+    try:
+        return select_user_by_username(session, username)
+    except NoResultFound:
+        raise HTTPException(status_code=404, detail="User not found")
+
+
+@router.post(
+    "/users/", response_model=UserRead, dependencies=[Depends(allow_manage_users)]
+)
+async def create_user(user: UserCreate, session: Session = Depends(get_session)):
+    try:
+        return insert_user(session, user)
+    except IntegrityError:
+        raise HTTPException(
+            status_code=400, detail="User already exists (by its username)"
+        )
+
+
+async def _modify_user(username: str, user_data: UserUpdate, session: Session) -> User:
+    try:
+        return update_user(session, username, user_data)
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Username already exists")
+
+
+@router.patch("/users/me", response_model=UserRead)
+async def modify_user_me(
+    user_data: UserUpdate,
+    user: User = Depends(get_current_active_user),
+    session: Session = Depends(get_session),
+):
+    return _modify_user(user.username, user_data, session)
+
+
+@router.patch(
+    "/users/{username}",
+    response_model=UserRead,
+    dependencies=[Depends(allow_manage_users)],
+)
+async def modify_user(
+    username: str, user_data: UserUpdate, session: Session = Depends(get_session)
+):
+    return _modify_user(username, user_data, session)
+
+
+@router.post("/users/me/change-password", response_model=UserRead)
+async def change_password_me(
+    password_change: PasswordUpdate,
+    user: User = Depends(get_current_active_user),
+    session: Session = Depends(get_session),
+):
+    try:
+        update_password(session, user.username, password_change)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post(
+    "/users/{username}/change-password",
+    response_model=UserRead,
+    dependencies=[Depends(allow_manage_users)],
+)
+async def change_password(
+    username: str,
+    password_change: PasswordUpdate,
+    session: Session = Depends(get_session),
+):
+    try:
+        return update_password(session, username, password_change)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get(
+    "/roles/",
+    response_model=List[Role],
+    dependencies=[Depends(get_current_active_user)],
+)
+async def get_roles(session: Session = Depends(get_session)):
+    return select_all_roles(session)
+
+
+@router.post(
+    "/roles/", response_model=Role, dependencies=[Depends(get_current_active_user)]
+)
+async def create_role(role: RoleCreate, session: Session = Depends(get_session)):
+    try:
+        return insert_role(session, role)
+    except IntegrityError:
+        raise HTTPException(status_code=400, detail="Role already exists")
 
 
 @router.post("/token", response_model=APIToken)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await authenticate_user(form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if user is None:
-        return auth_exception("Usuario o contraseña incorrecta")
+        raise auth_exception("Wrong username or password")
     access_token = create_jwt(data={"sub": user.username, "name": user.fullname})
     return APIToken(access_token=access_token, token_type="bearer")
