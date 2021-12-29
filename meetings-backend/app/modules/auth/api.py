@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlmodel import Session
 
-from app.database import get_session
+from app.database import get_db_session
 from app.modules.auth.crud import (
     insert_role,
     insert_user,
@@ -41,14 +41,14 @@ router = APIRouter()
 @router.get(
     "/users/", response_model=List[UserRead], dependencies=[Depends(allow_manage_users)]
 )
-async def get_users(session: Session = Depends(get_session)):
+async def get_users(session: Session = Depends(get_db_session)):
     return select_all_users(session)
 
 
 @router.get("/users/me", response_model=UserRead)
 async def get_user_me(
     user: User = Depends(get_current_active_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db_session),
 ):
     return select_user_by_username(session, user.username)
 
@@ -58,7 +58,7 @@ async def get_user_me(
     response_model=UserRead,
     dependencies=[Depends(get_current_active_user)],
 )
-async def get_user(username: str, session: Session = Depends(get_session)):
+async def get_user(username: str, session: Session = Depends(get_db_session)):
     try:
         return select_user_by_username(session, username)
     except NoResultFound:
@@ -68,7 +68,7 @@ async def get_user(username: str, session: Session = Depends(get_session)):
 @router.post(
     "/users/", response_model=UserRead, dependencies=[Depends(allow_manage_users)]
 )
-async def create_user(user: UserCreate, session: Session = Depends(get_session)):
+async def create_user(user: UserCreate, session: Session = Depends(get_db_session)):
     try:
         return insert_user(session, user)
     except IntegrityError:
@@ -88,7 +88,7 @@ async def _modify_user(username: str, user_data: UserUpdate, session: Session) -
 async def modify_user_me(
     user_data: UserUpdate,
     user: User = Depends(get_current_active_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db_session),
 ):
     return _modify_user(user.username, user_data, session)
 
@@ -99,7 +99,7 @@ async def modify_user_me(
     dependencies=[Depends(allow_manage_users)],
 )
 async def modify_user(
-    username: str, user_data: UserUpdate, session: Session = Depends(get_session)
+    username: str, user_data: UserUpdate, session: Session = Depends(get_db_session)
 ):
     return _modify_user(username, user_data, session)
 
@@ -108,7 +108,7 @@ async def modify_user(
 async def change_password_me(
     password_change: PasswordUpdate,
     user: User = Depends(get_current_active_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db_session),
 ):
     try:
         update_password(session, user.username, password_change)
@@ -124,7 +124,7 @@ async def change_password_me(
 async def change_password(
     username: str,
     password_change: PasswordUpdate,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_db_session),
 ):
     try:
         return update_password(session, username, password_change)
@@ -137,14 +137,14 @@ async def change_password(
     response_model=List[Role],
     dependencies=[Depends(get_current_active_user)],
 )
-async def get_roles(session: Session = Depends(get_session)):
+async def get_roles(session: Session = Depends(get_db_session)):
     return select_all_roles(session)
 
 
 @router.post(
     "/roles/", response_model=Role, dependencies=[Depends(get_current_active_user)]
 )
-async def create_role(role: RoleCreate, session: Session = Depends(get_session)):
+async def create_role(role: RoleCreate, session: Session = Depends(get_db_session)):
     try:
         return insert_role(session, role)
     except IntegrityError:

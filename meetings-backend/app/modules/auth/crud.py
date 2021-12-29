@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 
 from sqlalchemy import select
 from sqlmodel import Session, select
@@ -18,7 +18,11 @@ def select_all_users(session: Session) -> List[User]:
     return session.execute(select(User)).scalars().all()
 
 
-def select_user_by_username(session: Session, username: str) -> User:
+def select_user_by_id(session: Session, user_id: int) -> Optional[User]:
+    return session.get(User, user_id)
+
+
+def select_user_by_username(session: Session, username: str) -> Optional[User]:
     return session.execute(select(User).where(User.username == username)).scalar_one()
 
 
@@ -26,8 +30,8 @@ def insert_user(session: Session, user: UserCreate) -> User:
     user_db = User(**user.dict(exclude={"plain_password": True, "roles": True}))
     # hash password and set roles
     user_db.password = security.hash_password(user.plain_password)
-    for role in user.roles:
-        role_db = session.get(Role, role.id)
+    for role_name in user.roles:
+        role_db = select_role_by_name(session, role_name)
         # if role doesn't exist, skip it
         if role_db is not None:
             user_db.roles.append(role_db)
@@ -42,7 +46,10 @@ def update_user(session: Session, username: str, user_updated_data: UserUpdate) 
     user = select_user_by_username(username)
     # go through all the fields defined an update them
     for k, v in user_updated_data.dict(exclude_unset=True).items():
-        setattr(user, k, v)
+        if k != "roles":
+            setattr(user, k, v)
+        else:
+            updated_roles = []
 
     session.add(user)
     session.commit()
@@ -68,6 +75,10 @@ def update_password(
 
 def select_all_roles(session: Session) -> List[Role]:
     return session.execute(select(Role)).scalars().all()
+
+
+def select_role_by_name(session: Session, name: str) -> Optional[Role]:
+    return session.execute(select(Role).where(Role.name == name)).scalar_one()
 
 
 def insert_role(session: Session, role: RoleCreate) -> Role:

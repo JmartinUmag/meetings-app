@@ -59,14 +59,14 @@ class UserRead(UserExtra):
 
 class UserCreate(UserBase):
     plain_password: str = Field(max_length=64)
-    roles: List["Role"] = []
+    roles: List[str] = []
 
 
 class UserUpdate(SQLModel):
     username: Optional[str] = Field(default=None)
     fullname: Optional[str] = Field(default=None)
     enabled: Optional[bool] = Field(default=None)
-    roles: Optional[List["Role"]] = Field(default=None)
+    roles: Optional[List[str]] = Field(default=None)
 
 
 class PasswordUpdate(SQLModel):
