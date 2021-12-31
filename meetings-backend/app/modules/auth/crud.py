@@ -1,7 +1,7 @@
 from typing import List, Optional
 
 from sqlalchemy import select
-from sqlmodel import Session, select
+from sqlmodel import Session
 
 from app.modules.auth import security
 from app.modules.auth.models import (
@@ -49,7 +49,7 @@ def update_user(session: Session, username: str, user_updated_data: UserUpdate) 
         if k != "roles":
             setattr(user, k, v)
         else:
-            updated_roles = []
+            user.roles = select_roles_by_name(session, user_updated_data.roles)
 
     session.add(user)
     session.commit()
@@ -79,6 +79,10 @@ def select_all_roles(session: Session) -> List[Role]:
 
 def select_role_by_name(session: Session, name: str) -> Optional[Role]:
     return session.execute(select(Role).where(Role.name == name)).scalar_one()
+
+
+def select_roles_by_name(session: Session, names: List[str]) -> List[Role]:
+    return session.execute(select(Role).where(Role.name.in_(names))).scalars().all()
 
 
 def insert_role(session: Session, role: RoleCreate) -> Role:

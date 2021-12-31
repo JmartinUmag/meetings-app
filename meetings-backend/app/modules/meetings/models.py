@@ -37,8 +37,8 @@ class MeetingCreate(MeetingBase):
 
 
 class MeetingRead(MeetingBase):
-    assistants: List["User"] = []
-    files: List["File"] = []
+    assistants: list = []
+    files: list = []
 
 
 class TaskBase(SQLModel):

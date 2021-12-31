@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
@@ -29,9 +30,12 @@ def get_user(username: str) -> Optional[User]:
     """
     Get user from database by username
     """
-    session = sessionmaker(engine, expire_on_commit=False)
-    with session() as session:
-        return auth_crud.select_user_by_username(session, username)
+    try:
+        session = sessionmaker(engine, expire_on_commit=False)
+        with session() as session:
+            return auth_crud.select_user_by_username(session, username)
+    except NoResultFound:
+        return None
 
 
 def authenticate_user(username: str, password: str) -> Optional[User]:
