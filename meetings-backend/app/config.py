@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     uploads_baseurl: str = "/storage"
 
     class Config:
-        env_file = ".env.local"
+        env_file = ".env"
 
 
 settings = Settings()

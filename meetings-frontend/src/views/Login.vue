@@ -6,7 +6,7 @@
           <div class="column is-5-tablet is-4-desktop is-3-widescreen">
             <form class="box">
               <h2 class="subtitle has-text-dark has-text-centered my-0">
-                Reuniones Secretas
+                {{ appName }}
               </h2>
               <hr class="my-4" />
               <div class="field">
@@ -81,6 +81,7 @@
 
   const { setToken, setUser } = useTokenStore()
   const router = useRouter()
+  const appName = import.meta.env.VITE_APP_NAME
 
   const username = ref('')
   const password = ref('')
