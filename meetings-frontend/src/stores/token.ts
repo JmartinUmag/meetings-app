@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { getStorageItem } from './utils'
-import jwtDecode, { JwtPayload } from 'jwt-decode'
+import { User } from '@/interfaces'
 
 interface TokenState {
-  user: string | null
+  user: User | null
   token: string | null
   tokenType: string | null
 }
@@ -11,22 +11,22 @@ interface TokenState {
 export const useTokenStore = defineStore({
   id: 'token',
   state: (): TokenState => ({
-    user: getStorageItem('user'),
-    token: getStorageItem('token'),
-    tokenType: getStorageItem('tokenType'),
+    user: getStorageItem('user', null, true),
+    token: getStorageItem('token', ''),
+    tokenType: getStorageItem('tokenType', ''),
   }),
   getters: {
     isAuthenticated: (state: TokenState) => state.token !== null,
   },
   actions: {
     setToken(token: string, tokenType: string) {
-      const { sub } = jwtDecode<JwtPayload>(token)
-
-      this.user = String(sub)
       this.token = token
       this.tokenType = tokenType
     },
-    clearToken() {
+    setUser(user: User) {
+      this.user = user
+    },
+    clearData() {
       this.user = null
       this.token = null
       this.tokenType = null

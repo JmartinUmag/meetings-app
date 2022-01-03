@@ -1,0 +1,15 @@
+.page-title {
+  display: block;
+  font-size: 1.75rem;
+  font-weight: 400;
+  color: #444;
+  margin-bottom: 1.5rem;
+
+  &:after {
+    content: '';
+    display: block;
+    width: 100px;
+    height: 2px;
+    background: mediumaquamarine;
+  }
+}

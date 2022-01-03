@@ -15,6 +15,7 @@
                     class="input"
                     placeholder="Usuario"
                     v-model="username"
+                    required
                   />
                   <span class="icon is-small is-left">
                     <o-icon icon="account" />
@@ -28,6 +29,7 @@
                     :type="passwordFieldType"
                     placeholder="Contraseña"
                     v-model="password"
+                    required
                   />
                   <span class="icon is-small is-left">
                     <o-icon icon="form-textbox-password" />
@@ -74,10 +76,10 @@
   import { computed, ref } from 'vue'
   import { useRouter } from 'vue-router'
   import { useTokenStore } from '@/stores/token'
-  import { login as apiLogin } from '@/api'
+  import { getMyUser, login as apiLogin } from '@/api'
   import { isApiError } from '@/utilities'
 
-  const { setToken } = useTokenStore()
+  const { setToken, setUser } = useTokenStore()
   const router = useRouter()
 
   const username = ref('')
@@ -95,8 +97,14 @@
     loading.value = true
     errorMessage.value = ''
     try {
+      // set token
       const tokenData = await apiLogin(username.value, password.value)
       setToken(tokenData.accessToken, tokenData.tokenType)
+
+      // set user
+      const user = await getMyUser()
+      setUser(user)
+
       await router.push({ name: 'Home' })
     } catch (error) {
       if (isApiError(error) && error.status === 401) {

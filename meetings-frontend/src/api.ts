@@ -1,8 +1,10 @@
+import router from '@/router'
 import camelcaseKeys from 'camelcase-keys'
 import { useTokenStore } from '@/stores/token'
-import { Token } from '@/interfaces'
+import { Meeting, MeetingCreate, Token, User } from '@/interfaces'
+import snakecaseKeys from 'snakecase-keys'
 
-const BASE_URL = 'http://localhost:8000'
+const BASE_URL = import.meta.env.VITE_API_BASE_URL
 
 async function api<T>(
   url: string,
@@ -10,11 +12,11 @@ async function api<T>(
   body: BodyInit | null | undefined = undefined,
   headers: HeadersInit | Record<string, never> = {}
 ): Promise<T> {
-  const token = useTokenStore()
+  const tokenStore = useTokenStore()
 
-  if (token.isAuthenticated) {
+  if (tokenStore.isAuthenticated) {
     headers = {
-      Authorization: `${token.tokenType} ${token.token}`,
+      Authorization: `${tokenStore.tokenType} ${tokenStore.token}`,
       ...headers,
     }
   }
@@ -24,6 +26,15 @@ async function api<T>(
       const text = await response.text()
       let detail: string
 
+      // if the user is authenticated and the response is a 401,
+      // logout the user and don't throw the error
+      if (response.status === 401 && tokenStore.isAuthenticated) {
+        tokenStore.clearData()
+        await router.push({ name: 'Login' })
+        return Promise.resolve()
+      }
+
+      // get error detail from response body
       try {
         const json = JSON.parse(text)
         detail = json.detail
@@ -51,4 +62,41 @@ async function login(username: string, password: string): Promise<Token> {
   })
 }
 
-export { login }
+async function getUsers(): Promise<User[]> {
+  return api(`${BASE_URL}/auth/users/`)
+}
+
+async function getMyUser(): Promise<User> {
+  return api(`${BASE_URL}/auth/users/me`)
+}
+
+async function createMeeting(meeting: MeetingCreate): Promise<Meeting> {
+  return api(
+    `${BASE_URL}/meetings/meetings/`,
+    'POST',
+    JSON.stringify(snakecaseKeys(meeting)),
+    {
+      'Content-Type': 'application/json',
+    }
+  )
+}
+
+async function getMeetingById(id: number | string): Promise<Meeting> {
+  return api(`${BASE_URL}/meetings/meetings/${id}`)
+}
+
+async function createFile(
+  file: File,
+  meetingId: number | string
+): Promise<File> {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return api(
+    `${BASE_URL}/meetings/meetings/${meetingId}/add-file`,
+    'POST',
+    formData
+  )
+}
+
+export { login, getMyUser, getUsers, createMeeting, getMeetingById, createFile }

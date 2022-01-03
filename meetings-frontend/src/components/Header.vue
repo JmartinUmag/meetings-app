@@ -17,20 +17,14 @@
 
       <div id="navbarBasicExample" class="navbar-menu">
         <div class="navbar-start">
-          <router-link :to="{ name: 'Home' }" class="navbar-item">
-            <o-icon icon="home" size="small" class="mr-1"> </o-icon>
-            Inicio
-          </router-link>
-          <router-link :to="{ name: 'ListUsers' }" class="navbar-item">
-            <o-icon icon="account" size="small" class="mr-1"> </o-icon>
-            Usuarios
-          </router-link>
+          <MenuLink route-name="Home" label="Inicio" icon="home" />
+          <MenuLink route-name="ListUsers" label="Usuarios" icon="account" />
         </div>
 
         <div class="navbar-end">
           <div class="navbar-item has-dropdown is-hoverable">
             <a class="navbar-link">
-              {{ user }}
+              {{ user?.fullname }}
             </a>
 
             <div class="navbar-dropdown">
@@ -45,10 +39,16 @@
 
 <script setup lang="ts">
   import { useTokenStore } from '@/stores/token'
+  import { useRouter } from 'vue-router'
+  import { User } from '@/interfaces'
+  import MenuLink from '@/components/MenuLink.vue'
 
-  const { user, clearToken } = useTokenStore()
+  const router = useRouter()
+  const tokenStore = useTokenStore()
+  const user: User | null = tokenStore.user
 
   async function logout() {
-    clearToken()
+    tokenStore.clearData()
+    await router.push({ name: 'Login' })
   }
 </script>
