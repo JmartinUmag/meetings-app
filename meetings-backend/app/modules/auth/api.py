@@ -105,29 +105,13 @@ async def modify_user(
 
 
 @router.post("/users/me/change-password", response_model=UserRead)
-async def change_password_me(
+async def change_my_password(
     password_change: PasswordUpdate,
     user: User = Depends(get_current_active_user),
     session: Session = Depends(get_db_session),
 ):
     try:
         update_password(session, user.username, password_change)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-
-@router.post(
-    "/users/{username}/change-password",
-    response_model=UserRead,
-    dependencies=[Depends(allow_manage_users)],
-)
-async def change_password(
-    username: str,
-    password_change: PasswordUpdate,
-    session: Session = Depends(get_db_session),
-):
-    try:
-        return update_password(session, username, password_change)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
