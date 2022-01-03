@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 from sqlmodel import Session
 
 from app.modules.auth import security
@@ -22,8 +23,13 @@ def select_user_by_id(session: Session, user_id: int) -> Optional[User]:
     return session.get(User, user_id)
 
 
-def select_user_by_username(session: Session, username: str) -> Optional[User]:
-    return session.execute(select(User).where(User.username == username)).scalar_one()
+def select_user_by_username(
+    session: Session, username: str, include_roles: bool = False
+) -> Optional[User]:
+    query = select(User).where(User.username == username)
+    if include_roles:
+        query = query.options(joinedload(User.roles))
+    return session.execute(query).unique().scalar_one()
 
 
 def insert_user(session: Session, user: UserCreate) -> User:

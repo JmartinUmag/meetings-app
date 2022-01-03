@@ -1,10 +1,10 @@
 import datetime as dt
 from typing import TYPE_CHECKING, List, Optional
 
-from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, String
+from sqlmodel import Column, DateTime, Field, Relationship, SQLModel, String, Text
 
 if TYPE_CHECKING:
-    from app.modules.auth.models import User
+    from app.modules.auth.models import User, UserRead
 
 
 class MeetingUserLink(SQLModel, table=True):
@@ -17,6 +17,7 @@ class MeetingUserLink(SQLModel, table=True):
 class MeetingBase(SQLModel):
     title: str = Field(sa_column=Column(String(length=64)))
     summary: str = Field(sa_column=Column(String(length=128)))
+    details: str = Field(sa_column=Column(Text()))
     datetime: dt.datetime = Field(sa_column=Column(DateTime))
     place: str = Field(sa_column=Column(String(length=128)))
 
@@ -36,8 +37,16 @@ class MeetingCreate(MeetingBase):
     assistants_ids: List[int] = Field(default=[])
 
 
+class MeetingAssistant(SQLModel):
+    id: int
+    username: str
+    fullname: str
+    enabled: bool
+
+
 class MeetingRead(MeetingBase):
-    assistants: list = []
+    id: int
+    assistants: List[MeetingAssistant] = []
     files: list = []
 
 

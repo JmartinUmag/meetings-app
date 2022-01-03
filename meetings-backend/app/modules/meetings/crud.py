@@ -4,7 +4,7 @@ from sqlalchemy import select
 from sqlmodel import Session
 
 from app.modules.auth.crud import select_user_by_id
-from app.modules.meetings.models import Meeting, MeetingCreate
+from app.modules.meetings.models import File, Meeting, MeetingCreate
 
 
 def select_all_meetings(session: Session) -> List[Meeting]:
@@ -27,3 +27,14 @@ def insert_meeting(session: Session, meeting: MeetingCreate) -> Meeting:
     session.commit()
 
     return meeting_db
+
+
+def select_file_by_id(session: Session, file_id: int) -> File:
+    return session.get(File, file_id)
+
+
+def insert_file(session: Session, file: File) -> File:
+    session.add(file)
+    session.commit()
+
+    return file

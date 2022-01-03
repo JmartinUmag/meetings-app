@@ -1,6 +1,7 @@
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
+from starlette.staticfiles import StaticFiles
 
 from app.config import settings
 from app.modules.auth.api import router as auth_router
@@ -12,6 +13,12 @@ else:
     docs_opts = {}
 
 app = FastAPI(title=settings.app_name, root_path=settings.root_path, **docs_opts)
+
+app.mount(
+    settings.uploads_baseurl,
+    StaticFiles(directory=settings.uploads_directory),
+    name="uploads",
+)
 
 app.add_middleware(
     CORSMiddleware,

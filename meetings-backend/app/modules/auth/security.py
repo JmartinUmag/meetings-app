@@ -33,7 +33,9 @@ def get_user(username: str) -> Optional[User]:
     try:
         session = sessionmaker(engine, expire_on_commit=False)
         with session() as session:
-            return auth_crud.select_user_by_username(session, username)
+            return auth_crud.select_user_by_username(
+                session, username, include_roles=True
+            )
     except NoResultFound:
         return None
 
